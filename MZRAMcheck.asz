@@ -4,24 +4,23 @@
 	org	0x0000
 
 START:	
-	LD      A,0x82		;8255 A=OUT B=IN C=OUT
-	OUT     (0xE3),A
-	LD      A,0x0F		;PIO A=OUT
-	OUT     (0xE9),A
-	LD      A,0xCF		;PIO B=IN
-	OUT     (0xEB),A
-	LD      A,0xFF
-	OUT     (0xEB),A
-	LD      A,0x58		;BST=1 OPEN=1 WRITE=1
-	OUT     (0xE2),A
-	LD      A,0x12
-	OUT     (0xE0),A	; CRT normal1, BLK1 set FF1, 
-	XOR     A	
-	OUT     (0xF4),A	; GVRAM 1 write, no display, GVRAM 2 no write , no display
+	ld	a,0x82		;8255 A=OUT B=IN C=OUT
+	out	(0xE3),a
+	ld	a,0x0F		;PIO A=OUT
+	out	(0xE9),a
+	ld 	a,0xCF		;PIO B=IN
+	out	(0xEB),a
+	ld	a,0xFF
+	out	(0xEB),a
+	ld	a,0x58		;BST=1 OPEN=1 WRITE=1
+	out	(0xE2),a
+	ld	a,0x12
+	out	(0xE0),a	; CRT normal1, BLK1 set FF1, 
+	xor	a	
+	out	(0xF4),a	; GVRAM 1 write, no display, GVRAM 2 no write , no display
 
 	ld iy,LS
 	jp CLS
-
 ;bank I,II check $0000-$7FFF($8000-$FFFF)
 
 LS:
@@ -29,7 +28,7 @@ LS:
 	inc a
 L0:
 	ex af,af'
-	ld hl,0x7fff	; check add
+	ld hl,0x7FFF	; check add
 	ld bc,0x8000	; loop count
 	dec bc
 	inc c
@@ -38,7 +37,6 @@ L0:
 	ld c,b
 	ld b,a
 	ex af,af'
-
 L1:
 	inc hl
 	ld (hl),a
@@ -47,21 +45,19 @@ L1:
 CHK:
 	cp (hl)
 	jr nz,ERR
-
 RL1:
 	djnz L1
 	dec c
 	jr nz,L1
-
 	rlca
 	jr nc,L0
 
 ; restart NST
 NST:
-	LD HL,0x0000
-	LD DE,0x8000
-	LD BC,0x150
-	LDIR
+	ld hl,0x0000
+	ld de,0x8000
+	ld bc,0x150
+	ldir
 	ld a,02
 	ld (0x8001),a
 	xor a
@@ -69,65 +65,62 @@ NST:
 	ld (0x8001+SUB),a
 	ld a,0x76
 	ld (0x8000+NST),a
-	LD      A,03H
-	OUT     (0E3H),A
+	ld a,0x03
+	out	(0E3H),a
 	halt
 
-
 ; print address and data
-
 PUTAD:
-	EX af,af'
+	ex af,af'
 	ld a,0x90
-	out (0xe8),a
+	out (0xE8),a
 
 	ld a,h
 SUB:
 	sub 0x80
-	EXX
-	ld bc,0xd000
-	ld iy,rtnad
-	jr BTOC
 
-rtnad:
+	exx
+	ld bc,0xD000
+	ld iy,RTNAD
+	jr BTOC
+RTNAD:
 	exx
 	ld a,l
 	exx
-	ld iy,rtnad1
+	ld iy,RTNAD1
 	jr BTOC
-rtnad1:
-	ld a,0x2d
+RTNAD1:
+	ld a,0x2D
 	ld (bc),a
 	inc bc
-	EX af,af'
-	EXX
+	ex af,af'
+	exx
 	ld d,a
-	EXX
-	ld iy,rtnad2
+	exx
+	ld iy,RTNAD2
 	jr BTOC
-rtnad2:
-	ld a,0x2d
+RTNAD2:
+	ld a,0x2D
 	ld (bc),a
 	inc bc
 	ld a,0x10
-	out (0xe8),a	
-	EXX
+	out (0xE8),a	
+	exx
 	ld a,d
 	jp (ix)
 	halt
 
-
+;	print error data and message
 ERR:
 	ex af,af'
 	ld a,0x90
-	out (0xe8),a
+	out (0xE8),a
 	ld a,(hl)
 	exx
 	ld iy,PUTER
 	jr BTOC
-
 PUTER:
-	ld a,0x2d
+	ld a,0x2D
 	ld (bc),a
 	inc bc
 	ld hl,ERST
@@ -135,24 +128,22 @@ PUTST:
 	ld a,(hl)
 	cp 0x0
 	jr nz,PUTCH
-
 ;wait key in
-	in a,(0xe8)
-	and 0xf0
+	in a,(0xE8)
+	and 0xF0
 	or 0x13
-	out (0xe8),a
+	out (0xE8),a
 KIN:
-	in a,(0xea)
+	in a,(0xEA)
 	and 0x02
 	jr nz,KIN
-
 WAIT:
-	in a,(0xea)
+	in a,(0xEA)
 	and 0x02
 	jr z,WAIT
 
 	ld a,0x10
-	out (0xe8),a
+	out (0xE8),a
 	ld iy,BCK
 	jr CLS
 BCK:
@@ -166,29 +157,28 @@ PUTCH:
 	inc hl
 	jr PUTST
 		
-
 BTOC:
 ; A(hex8bit)を文字列へDEへ（D下、E上)
 	ld e,a
-	and 0x0f
+	and 0x0F
 	add a,0x30
-	cp 0x3a
-	jr c,strd
+	cp 0x3A
+	jr c,STRD
 	add a,0x07
-strd:
+STRD:
 	ld d,a
 
 	ld a,e
-	and 0xf0
+	and 0xF0
 	rrca
 	rrca
 	rrca
 	rrca
 	add a,0x30
-	cp 0x3a
-	jr c,stre
+	cp 0x3A
+	jr c,STRE
 	add a,0x07
-stre:
+STRE:
 	ld e,a
 
 	ld a,e
@@ -202,17 +192,17 @@ stre:
 
 CLS:
 ;clear Character display
-	LD      HL,0xD000
-	LD      A,0xB3
-	OUT     (0xE8),A
+	ld	hl,0xD000
+	ld	a,0xB3
+	out	(0xE8),a
 CLEAR:	
-	LD      (HL),0x00	;DISPLAY CLEAR
-	INC     HL
-	LD      A,H
-	OR      L
-	JR      NZ,CLEAR
-	LD      A,0x13
-	OUT     (0xE8),A
+	ld	(hl),0x00	;DISPLAY CLEAR
+	inc	hl
+	ld	a,h
+	or	l
+	jr	nz,CLEAR
+	ld	a,0x13
+	out	(0xE8),a
 	jp (iy)
 
 ERST:
